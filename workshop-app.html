@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Kiro Workshop — Para No-Desarrolladores</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--pri:#6C5CE7;--pri-l:#A29BFE;--pri-d:#5A4BD1;--ok:#00B894;--ok-l:#E8F8F5;--warn:#FDCB6E;--warn-l:#FFF9E6;--err:#E17055;--bg:#F8F9FD;--sf:#FFF;--tx:#2D3436;--tx2:#636E72;--bd:#DFE6E9;--sb:#2D3436;--r:12px;--sh:0 2px 12px rgba(0,0,0,.08);--tr:.25s ease}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.6}
+#app{display:flex;min-height:100vh}
+
+/* === Language Picker === */
+#langPicker{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+#langPicker.hidden{display:none}
+.lp-title{font-size:2rem;font-weight:700;margin-bottom:4px}
+.lp-sub{font-size:.9rem;color:var(--tx2);margin-bottom:24px;text-align:center}
+.lp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:400px;width:90%}
+.lp-btn{display:flex;align-items:center;gap:12px;padding:18px 24px;border:2px solid var(--bd);border-radius:var(--r);background:var(--sf);cursor:pointer;font-size:1rem;font-weight:600;transition:all var(--tr)}
+.lp-btn:hover{border-color:var(--pri);transform:translateY(-2px);box-shadow:var(--sh)}
+.lp-btn.sel{border-color:var(--pri);background:#F0EEFF}
+.lp-flag{font-size:1.8rem}
+.lp-go{margin-top:20px;padding:14px 48px;background:var(--pri);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;transition:all var(--tr);opacity:.4;pointer-events:none}
+.lp-go.active{opacity:1;pointer-events:auto}
+.lp-go.active:hover{background:var(--pri-d);transform:translateY(-1px)}
+
+/* === Sidebar === */
+#sidebar{width:280px;min-width:280px;background:var(--sb);color:var(--bd);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
+.sb-hd{padding:20px 16px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-logo{font-size:1.2rem;font-weight:700}
+.sb-sub{font-size:.75rem;opacity:.6;margin-top:2px}
+.sb-prog{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+.pb{height:5px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden}
+.pb-fill{height:100%;background:var(--ok);border-radius:3px;transition:width .5s ease;width:0}
+.pb-txt{display:block;font-size:.7rem;opacity:.6;margin-top:4px}
+#navList{list-style:none;flex:1;padding:8px 0;overflow-y:auto}
+.nv-mod{padding:8px 16px;font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;opacity:.4;font-weight:600}
+.nv-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;font-size:.82rem;border-left:3px solid transparent;transition:background var(--tr)}
+.nv-item:hover{background:rgba(255,255,255,.05)}
+.nv-item.act{background:rgba(108,92,231,.2);border-left-color:var(--pri-l);color:#fff}
+.nv-item.done .nv-ic{color:var(--ok)}
+.nv-ic{width:18px;text-align:center;font-size:.85rem;flex-shrink:0}
+.sb-ft{padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);display:flex;gap:6px}
+.sb-btn{background:none;border:1px solid rgba(255,255,255,.2);color:var(--bd);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:.75rem;flex:1;transition:all var(--tr)}
+.sb-btn:hover{background:rgba(255,255,255,.1)}
+
+/* === Main === */
+main{flex:1;margin-left:280px;padding:36px 44px 120px;max-width:860px}
+#mc{animation:fi .3s ease}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* === Step === */
+.s-hd{margin-bottom:28px}
+.s-badge{display:inline-block;background:var(--pri);color:#fff;font-size:.65rem;font-weight:600;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.s-title{font-size:1.7rem;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:6px}
+.s-sub{font-size:.95rem;color:var(--tx2)}
+.s-time{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;color:var(--tx2);margin-top:6px;background:var(--bg);padding:3px 10px;border-radius:20px}
+
+/* === Content === */
+.cb{margin-bottom:20px}
+.cb h3{font-size:1.05rem;font-weight:600;margin-bottom:10px}
+.cb p,.cb li{font-size:.92rem;line-height:1.7}
+.cb ul,.cb ol{padding-left:22px;margin-bottom:10px}
+.cb li{margin-bottom:5px}
+
+/* === Cards === */
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
+.c-i{border-left:4px solid var(--pri);background:#F0EEFF}
+.c-t{border-left:4px solid var(--warn);background:var(--warn-l)}
+.c-s{border-left:4px solid var(--ok);background:var(--ok-l)}
+.c-w{border-left:4px solid var(--err);background:#FFEEE8}
+.c-lb{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:block}
+.c-i .c-lb{color:var(--pri)}.c-t .c-lb{color:#E17055}.c-s .c-lb{color:var(--ok)}.c-w .c-lb{color:var(--err)}
+
+/* === Code === */
+.code{background:#2D3436;color:#DFE6E9;border-radius:8px;padding:16px;margin:12px 0;font-family:'SF Mono','Fira Code',Consolas,monospace;font-size:.83rem;line-height:1.6;overflow-x:auto;position:relative;white-space:pre-wrap}
+.cp-btn{position:absolute;top:6px;right:6px;background:rgba(255,255,255,.1);border:none;color:#DFE6E9;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:.72rem;transition:all var(--tr)}
+.cp-btn:hover{background:rgba(255,255,255,.2)}
+.cp-btn.ok{background:var(--ok);color:#fff}
+
+/* === Checkpoint === */
+.ckpt{background:var(--ok-l);border:2px solid var(--ok);border-radius:var(--r);padding:16px 20px;margin:20px 0;display:flex;align-items:flex-start;gap:14px}
+.ckpt-ic{font-size:1.4rem;flex-shrink:0}
+.ckpt-tx{font-size:.92rem;font-weight:500;margin-bottom:10px}
+.ckpt-btn{background:var(--ok);color:#fff;border:none;padding:7px 18px;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;transition:all var(--tr)}
+.ckpt-btn:hover{background:#00A381}
+.ckpt-btn.dn{background:#B2DFDB;color:#00695C;cursor:default}
+
+/* === Exercise Steps === */
+.ex-steps{counter-reset:exs}
+.ex-s{display:flex;gap:14px;margin-bottom:16px;align-items:flex-start}
+.ex-s::before{counter-increment:exs;content:counter(exs);background:var(--pri);color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0;margin-top:2px}
+.ex-sc{flex:1}
+.ex-sc p{margin-bottom:6px}
+
+/* === Assessment === */
+.a-grid{display:grid;gap:14px;margin:16px 0}
+.a-item{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:16px}
+.a-q{font-size:.92rem;font-weight:500;margin-bottom:10px}
+.r-grp{display:flex;gap:6px;flex-wrap:wrap}
+.r-btn{width:42px;height:42px;border:2px solid var(--bd);border-radius:8px;background:var(--sf);cursor:pointer;font-size:.95rem;font-weight:600;color:var(--tx2);transition:all var(--tr);display:flex;align-items:center;justify-content:center}
+.r-btn:hover{border-color:var(--pri);color:var(--pri)}
+.r-btn.sel{background:var(--pri);border-color:var(--pri);color:#fff}
+.cm-in{width:100%;padding:10px 14px;border:2px solid var(--bd);border-radius:8px;font-size:.92rem;font-family:inherit;resize:vertical;min-height:70px;transition:border-color var(--tr)}
+.cm-in:focus{outline:none;border-color:var(--pri)}
+
+/* === Table === */
+.w-tbl{width:100%;border-collapse:collapse;margin:12px 0;font-size:.88rem}
+.w-tbl th,.w-tbl td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--bd)}
+.w-tbl th{background:var(--bg);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--tx2)}
+
+/* === Nav Buttons === */
+.nav-b{display:flex;justify-content:space-between;padding:20px 0;margin-top:28px;border-top:1px solid var(--bd)}
+.btn{padding:10px 24px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;border:none;transition:all var(--tr)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{background:var(--pri);color:#fff}
+.btn-p:hover:not(:disabled){background:var(--pri-d);transform:translateY(-1px)}
+.btn-s{background:var(--sf);color:var(--tx);border:1px solid var(--bd)}
+.btn-s:hover:not(:disabled){background:var(--bg)}
+
+/* === Completion === */
+.comp{text-align:center;padding:50px 20px}
+.comp-ic{font-size:3.5rem;margin-bottom:16px}
+.comp-t{font-size:1.8rem;font-weight:700;margin-bottom:10px}
+.comp-st{font-size:1rem;color:var(--tx2);margin-bottom:28px}
+.comp-stats{display:flex;justify-content:center;gap:28px;margin-bottom:36px;flex-wrap:wrap}
+.stat-v{font-size:1.8rem;font-weight:700;color:var(--pri)}
+.stat-l{font-size:.78rem;color:var(--tx2)}
+
+/* === Responsive === */
+@media(max-width:700px){
+  #app{flex-direction:column}
+  #sidebar{position:relative;width:100%;min-width:100%}
+  #navList,.sb-ft{display:none}
+  main{margin-left:0;padding:16px 14px 100px}
+  .s-title{font-size:1.3rem}
+  .lp-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Language Picker -->
+<div id="langPicker">
+  <div class="lp-title" id="lpTitle">Elige tu idioma</div>
+  <div class="lp-sub">Choose your language · Scegli la tua lingua · Wähle deine Sprache</div>
+  <div class="lp-grid">
+    <button class="lp-btn" data-lang="es"><span class="lp-flag">🇪🇸</span>Español</button>
+    <button class="lp-btn" data-lang="en"><span class="lp-flag">🇬🇧</span>English</button>
+    <button class="lp-btn" data-lang="it"><span class="lp-flag">🇮🇹</span>Italiano</button>
+    <button class="lp-btn" data-lang="de"><span class="lp-flag">🇩🇪</span>Deutsch</button>
+  </div>
+  <button class="lp-go" id="lpGo">Continuar</button>
+</div>
+
+<!-- App Shell -->
+<div id="app" class="hidden">
+  <nav id="sidebar">
+    <div class="sb-hd">
+      <div class="sb-logo">👻 Kiro Workshop</div>
+      <div class="sb-sub" id="sbSub"></div>
+    </div>
+    <div class="sb-prog">
+      <div class="pb"><div class="pb-fill" id="pbFill"></div></div>
+      <span class="pb-txt" id="pbTxt"></span>
+    </div>
+    <ul id="navList"></ul>
+    <div class="sb-ft">
+      <button class="sb-btn" id="langBtn">🌐</button>
+      <button class="sb-btn" id="resetBtn">🔄</button>
+    </div>
+  </nav>
+  <main><div id="mc"></div><div class="nav-b"><button id="prevBtn" class="btn btn-s" disabled></button><button id="nextBtn" class="btn btn-p"></button></div></main>
+</div>
+
+<script>
+// ===== UI STRINGS =====
+const U={
+es:{sub:"Para No-Desarrolladores",prev:"← Anterior",next:"Siguiente →",summary:"Ver resumen →",est:"estimados",copy:"Copiar",copied:"¡Copiado!",mark:"Marcar como completado",done:"Completado",compT:"¡Workshop Completado!",compS:"Has dado tus primeros pasos con Kiro. Ahora tienes las herramientas para automatizar tu trabajo diario.",ckpts:"Checkpoints",pre:"Promedio Pre",post:"Promedio Post",resetC:"¿Borrar todo tu progreso?",changeLang:"Cambiar idioma",resetT:"Reiniciar"},
+en:{sub:"For Non-Developers",prev:"← Previous",next:"Next →",summary:"View summary →",est:"estimated",copy:"Copy",copied:"Copied!",mark:"Mark as completed",done:"Completed",compT:"Workshop Completed!",compS:"You've taken your first steps with Kiro. Now you have the tools to automate your daily work.",ckpts:"Checkpoints",pre:"Avg Pre",post:"Avg Post",resetC:"Erase all your progress?",changeLang:"Change language",resetT:"Reset"},
+it:{sub:"Per Non-Sviluppatori",prev:"← Precedente",next:"Successivo →",summary:"Vedi riepilogo →",est:"stimati",copy:"Copia",copied:"Copiato!",mark:"Segna come completato",done:"Completato",compT:"Workshop Completato!",compS:"Hai fatto i tuoi primi passi con Kiro. Ora hai gli strumenti per automatizzare il tuo lavoro quotidiano.",ckpts:"Checkpoint",pre:"Media Pre",post:"Media Post",resetC:"Cancellare tutti i tuoi progressi?",changeLang:"Cambia lingua",resetT:"Ripristina"},
+de:{sub:"Für Nicht-Entwickler",prev:"← Zurück",next:"Weiter →",summary:"Zusammenfassung →",est:"geschätzt",copy:"Kopieren",copied:"Kopiert!",mark:"Als erledigt markieren",done:"Erledigt",compT:"Workshop Abgeschlossen!",compS:"Du hast deine ersten Schritte mit Kiro gemacht. Jetzt hast du die Werkzeuge, um deine tägliche Arbeit zu automatisieren.",ckpts:"Checkpoints",pre:"Durchschn. Vorher",post:"Durchschn. Nachher",resetC:"Gesamten Fortschritt löschen?",changeLang:"Sprache ändern",resetT:"Zurücksetzen"}
+};
+
+// ===== WORKSHOP CONTENT (all 4 languages) =====
+// Structure: each lang has modules[] → steps[] with id, title, subtitle, badge, time, html, checkpoint{text,id}
+function D(l){return W[l]||W.es}
+const W={
+// ---- ESPAÑOL ----
+es:{modules:[
+{id:"intro",title:"Bienvenida",icon:"👋",steps:[
+{id:"w",title:"Bienvenido/a al Workshop",subtitle:"Automatiza tu trabajo diario con IA — sin escribir código",badge:"Inicio",time:"5 min",html:`<div class="cb"><h3>¿Qué es Kiro?</h3><p>Kiro es un asistente de IA que vive dentro de un editor de código — pero no necesitas saber programar para usarlo. Piensa en Kiro como un compañero de trabajo inteligente que puede:</p><ul><li>📋 <b>Planificar proyectos</b> — transforma una idea vaga en un plan con pasos claros</li><li>🤖 <b>Automatizar tareas</b> — crea reglas tipo "cuando pase X, haz Y"</li><li>📄 <b>Analizar documentos</b> — lee tus archivos y te da insights accionables</li><li>🧠 <b>Recordar tu contexto</b> — sabe quién eres y cómo te gusta trabajar</li></ul></div><div class="card c-i"><span class="c-lb">¿Para quién es este workshop?</span><p>Program Managers, Training Specialists, Ops, Business Analysts — cualquier persona que quiera ser más productiva con IA sin escribir código.</p></div><div class="cb"><h3>¿Qué vas a lograr hoy?</h3><ol><li>Conversar con Kiro y pedirle ayuda con tareas reales</li><li>Crear un plan estructurado usando <b>Specs</b></li><li>Automatizar una tarea repetitiva con <b>Hooks</b></li><li>Configurar <b>Steering</b> para que Kiro entienda tu contexto</li><li>Saber cómo compartir todo con tu equipo</li></ol></div>`},
+{id:"pre",title:"Auto-evaluación Inicial",subtitle:"Mide tu punto de partida",badge:"Pre-Assessment",time:"2 min",html:`<div class="cb"><p>Evalúa tu nivel actual. Sé honesto/a — no hay respuestas correctas. Al final repetiremos esto.</p></div><div class="a-grid">${['"Sé qué es Kiro y para qué sirve"','"Puedo usar Kiro para planificar un proyecto"','"Puedo automatizar una tarea repetitiva con Kiro"','"Sé cómo compartir lo que creo en Kiro"','"Me siento capaz de enseñar Kiro a un colega"'].map((q,i)=>`<div class="a-item"><div class="a-q">${i+1}. ${q}</div><div class="r-grp" data-q="pre-q${i+1}"></div></div>`).join("")}</div>`,checkpoint:{text:"He completado mi auto-evaluación inicial",id:"ck-pre"}}
+]},
+{id:"setup",title:"Setup",icon:"⚙️",steps:[
+{id:"set",title:"Instalar y Configurar Kiro",subtitle:"Prepara tu entorno de trabajo",badge:"Setup",time:"10 min",html:`<div class="card c-t"><span class="c-lb">Antes de empezar</span><p>Si ya tienes Kiro instalado, salta al checkpoint.</p></div><div class="cb"><h3>Paso 1: Instalar Kiro</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Ve a <b>kiro.dev</b> y descarga el instalador</p></div></div><div class="ex-s"><div class="ex-sc"><p>Abre el archivo descargado y sigue las instrucciones</p></div></div><div class="ex-s"><div class="ex-sc"><p>Haz login con <b>GitHub</b>, <b>Google</b>, o <b>AWS Builder ID</b></p></div></div></div></div><div class="cb"><h3>Paso 2: Crear tu workspace</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Crea una carpeta llamada <code>mi-workspace-kiro</code></p></div></div><div class="ex-s"><div class="ex-sc"><p>En Kiro: <b>File → Open Folder</b> → selecciona esa carpeta</p></div></div><div class="ex-s"><div class="ex-sc"><p>Busca el ícono del fantasma 👻 en la barra lateral y haz clic</p></div></div></div></div><div class="card c-i"><span class="c-lb">Modo recomendado</span><p>Usa Kiro en <b>modo Supervisado</b> para revisar cada cambio antes de aceptarlo.</p></div>`,checkpoint:{text:"Tengo Kiro abierto con mi carpeta y veo el panel 👻",id:"ck-set"}}
+]},
+{id:"m1",title:"Módulo 1: Chat",icon:"💬",steps:[
+{id:"m1i",title:"Chat — Tu Asistente Personal",subtitle:"Habla con Kiro en español y pídele cosas de tu trabajo real",badge:"Módulo 1",time:"20 min",html:`<div class="cb"><p>El chat de Kiro no es un chatbot genérico. Puede <b>ver tus archivos</b>, <b>crear documentos</b>, y <b>ejecutar acciones</b> — todo en lenguaje natural.</p></div><div class="card c-i"><span class="c-lb">Dato clave</span><p>Kiro entiende español, inglés, italiano, alemán, y muchos más idiomas.</p></div>`},
+{id:"m1e1",title:"Ejercicio 1.1: Tu Primera Conversación",subtitle:"Preséntate a Kiro",badge:"Ejercicio",time:"8 min",html:`<div class="cb"><h3>Instrucciones</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Abre el chat: clic en 👻 o <b>Ctrl+L</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Copia y pega esto, adaptándolo a tu rol:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copiar</button>Soy [tu rol] en [tu equipo]. Mi trabajo diario incluye [2-3 tareas principales].
+¿Cómo me puedes ayudar con estas tareas sin que yo sepa programar?</div></div></div><div class="ex-s"><div class="ex-sc"><p>Lee la respuesta y haz una pregunta de seguimiento</p></div></div></div></div><div class="card c-t"><span class="c-lb">Ejemplo</span><p><em>"Soy Training Specialist en GenAI. Diseño workshops, trackeo participantes, y analizo encuestas. ¿Cómo me ayudas?"</em></p></div>`,checkpoint:{text:"Kiro me dio al menos 3 ideas concretas",id:"ck-m1e1"}},
+{id:"m1e2",title:"Ejercicio 1.2: Analizar un Documento",subtitle:"Arrastra un archivo y deja que Kiro lo analice",badge:"Ejercicio",time:"10 min",html:`<div class="cb"><h3>Instrucciones</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Busca un archivo de tu trabajo (Excel, PDF, Word). Si no tienes uno, crea un .txt con notas.</p></div></div><div class="ex-s"><div class="ex-sc"><p><b>Arrastra el archivo al chat</b> (o clic en 📎)</p></div></div><div class="ex-s"><div class="ex-sc"><p>Escribe este prompt:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copiar</button>Analiza este documento y dime:
+1. ¿Qué patrones ves en los datos?
+2. ¿Qué podría mejorar?
+3. ¿Qué tareas repetitivas podría automatizar?</div></div></div></div></div>`,checkpoint:{text:"Kiro analizó mi documento y me dio insights",id:"ck-m1e2"}}
+]},
+{id:"m2",title:"Módulo 2: Specs",icon:"📐",steps:[
+{id:"m2i",title:"Specs — Planifica Como un Pro",subtitle:"Transforma una idea en un plan estructurado",badge:"Módulo 2",time:"25 min",html:`<div class="cb"><p><b>Specs</b> es la feature más poderosa para no-devs:</p><ol><li>Describes un proyecto en lenguaje natural</li><li>Kiro genera <b>Requirements</b></li><li>Kiro genera <b>Design</b></li><li>Kiro genera <b>Tasks</b> — pasos concretos</li></ol></div><div class="card c-i"><span class="c-lb">¿Dónde se guarda?</span><p>En <code>.kiro/specs/tu-proyecto/</code> — Kiro lo gestiona automáticamente.</p></div>`},
+{id:"m2e1",title:"Ejercicio 2.1: Tu Primera Spec",subtitle:"Describe un proyecto real",badge:"Ejercicio",time:"15 min",html:`<div class="cb"><h3>Instrucciones</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>En el panel de Kiro, sección <b>"Specs"</b> → clic en <b>+</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Describe tu proyecto:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copiar</button>Quiero [objetivo concreto].
+El público es [quién].
+Hoy lo hago [cómo lo haces manualmente].
+El problema es [qué dolor resuelve].</div></div></div><div class="ex-s"><div class="ex-sc"><p>Revisa Requirements, Design, y Tasks que Kiro genera</p></div></div></div></div><div class="card c-t"><span class="c-lb">Ejemplos por rol</span><p><b>PM:</b> <em>"Quiero crear onboarding para AI Champions. Hoy armo slides manualmente. Me toma 2 semanas."</em></p><p><b>Training:</b> <em>"Quiero automatizar encuestas post-programa. Hoy envío emails y consolido en Excel. Pierdo 3 días."</em></p></div><div class="card c-w"><span class="c-lb">Ten paciencia</span><p>Cada fase puede tomar 1-3 minutos. Es normal.</p></div>`,checkpoint:{text:"Tengo una spec con Requirements, Design y Tasks",id:"ck-m2e1"}},
+{id:"m2e2",title:"Ejercicio 2.2: Ejecutar una Tarea",subtitle:"Pon a Kiro a trabajar",badge:"⭐ Bonus",time:"8 min",html:`<div class="card c-t"><span class="c-lb">Bonus</span><p>Si te queda tiempo, prueba esto. Si no, hazlo después.</p></div><div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Abre <b>tasks.md</b> de tu spec</p></div></div><div class="ex-s"><div class="ex-sc"><p>Elige una tarea y haz clic en <b>"Run"</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Observa cómo Kiro la ejecuta</p></div></div></div></div>`,checkpoint:{text:"Kiro ejecutó una tarea y generó algo concreto",id:"ck-m2e2"}}
+]},
+{id:"m3",title:"Módulo 3: Hooks",icon:"🔁",steps:[
+{id:"m3i",title:"Hooks — Automatiza lo Repetitivo",subtitle:"Si pasa X, haz Y automáticamente",badge:"Módulo 3",time:"20 min",html:`<div class="cb"><p>Los <b>Hooks</b> son automatizaciones simples:</p><table class="w-tbl"><thead><tr><th>Cuando pasa esto...</th><th>Kiro hace esto</th></tr></thead><tbody><tr><td>Guardo un archivo</td><td>Lo revisa</td></tr><tr><td>Creo un archivo nuevo</td><td>Agrega estructura base</td></tr><tr><td>Presiono un botón</td><td>Genera un resumen</td></tr></tbody></table></div>`},
+{id:"m3e1",title:"Ejercicio 3.1: Hook de Revisión",subtitle:"Kiro revisa cada archivo que guardes",badge:"Ejercicio",time:"10 min",html:`<div class="cb"><h3>Instrucciones</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Panel de Kiro → <b>"Agent Hooks"</b> → <b>+</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Elige <b>"Ask Kiro to create a hook"</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Describe:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copiar</button>Cada vez que guarde un archivo markdown,
+quiero que Kiro lo revise y me diga:
+- Si tiene errores de ortografía o gramática
+- Si el tono es profesional pero accesible
+- Si le falta alguna sección importante</div></div></div><div class="ex-s"><div class="ex-sc"><p><b>Pruébalo:</b> Edita un .md y guárdalo (Ctrl+S)</p></div></div></div></div>`,checkpoint:{text:"Al guardar, Kiro me dio sugerencias automáticamente",id:"ck-m3e1"}},
+{id:"m3e2",title:"Ejercicio 3.2: Hook Manual",subtitle:"Un botón que genera resúmenes con un clic",badge:"Ejercicio",time:"8 min",html:`<div class="cb"><h3>Instrucciones</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Crea otro hook con:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copiar</button>Quiero un botón que cuando lo presione, Kiro genere un resumen ejecutivo
+del archivo que tengo abierto, en formato bullet points,
+máximo 5 puntos, en español.</div></div></div><div class="ex-s"><div class="ex-sc"><p>Haz clic en <b>▷ (play)</b> junto al hook</p></div></div></div></div><div class="card c-s"><span class="c-lb">¡Acabas de automatizar!</span><p>Tienes dos automatizaciones: una automática (al guardar) y una manual (con botón).</p></div>`,checkpoint:{text:"Puedo generar resúmenes con un clic",id:"ck-m3e2"}}
+]},
+{id:"m4",title:"Módulo 4: Steering",icon:"🧭",steps:[
+{id:"m4i",title:"Steering — Kiro Te Conoce",subtitle:"Kiro siempre sabe quién eres",badge:"Módulo 4",time:"15 min",html:`<div class="cb"><p><b>Steering</b> transforma a Kiro en TU asistente. Siempre sabe:</p><ul><li>Quién eres y qué haces</li><li>Tus proyectos actuales</li><li>Cómo te gusta recibir info</li><li>Tus herramientas</li><li>Tu audiencia</li></ul><p>Es como entrenar a un asistente — pero solo una vez.</p></div>`},
+{id:"m4e1",title:"Ejercicio 4.1: Tu Steering Personal",subtitle:"Configura tu contexto de trabajo",badge:"Ejercicio",time:"12 min",html:`<div class="cb"><h3>Instrucciones</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Abre el chat y pega esto:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copiar</button>Crea un archivo de steering en .kiro/steering/mi-contexto.md con este contenido:
+
+# Mi Contexto de Trabajo
+## Quién soy
+- Rol: [tu rol]
+- Equipo: [tu equipo]
+- Región: [tu región]
+## Mis proyectos actuales
+- [Programa 1]: [descripción]
+## Cómo me gusta trabajar
+- Idioma: Español
+- Tono: Profesional pero cercano
+- Formato: Bullet points y tablas
+- Siempre incluir: Próximos pasos accionables
+## Herramientas que uso
+- [Excel, PowerPoint, SharePoint, etc.]</div></div></div><div class="ex-s"><div class="ex-sc"><p>Reemplaza los [placeholders] con tu info real</p></div></div><div class="ex-s"><div class="ex-sc"><p><b>Pruébalo:</b> Nueva sesión de chat → <em>"ayúdame a preparar mi próxima sesión"</em></p></div></div></div></div><div class="card c-s"><span class="c-lb">El poder del steering</span><p>Kiro ya sabe quién eres. No más repetir tu contexto.</p></div>`,checkpoint:{text:"Kiro responde con mi contexto sin recordárselo",id:"ck-m4e1"}}
+]},
+{id:"m5",title:"Módulo 5: Compartir",icon:"🤝",steps:[
+{id:"m5s",title:"Compartir y Escalar",subtitle:"Todo vive en archivos que puedes compartir",badge:"Módulo 5",time:"10 min",html:`<div class="cb"><h3>¿Qué creaste hoy?</h3><table class="w-tbl"><thead><tr><th>Qué</th><th>Dónde</th><th>Cómo</th></tr></thead><tbody><tr><td>Specs</td><td><code>.kiro/specs/</code></td><td>Copiar carpeta</td></tr><tr><td>Hooks</td><td><code>.kiro/hooks/</code></td><td>Copiar archivos</td></tr><tr><td>Steering</td><td><code>.kiro/steering/</code></td><td>Copiar archivos</td></tr></tbody></table></div><div class="card c-i"><span class="c-lb">Opción A: Carpeta compartida</span><p>Copia a SharePoint/OneDrive. Otro colega abre con Kiro y tiene todo.</p></div><div class="card c-i"><span class="c-lb">Opción B: Repositorio</span><p>Si tu equipo usa control de versiones, se sincroniza automáticamente.</p></div><div class="card c-i"><span class="c-lb">Opción C: Template</span><p>Empaqueta workshop + .kiro/ + ejemplos. Otro trainer abre y listo.</p></div><div class="card c-w"><span class="c-lb">⚠️ No compartir</span><p>Credenciales, tokens, o datos sensibles.</p></div>`,checkpoint:{text:"Sé qué archivos compartir y cómo",id:"ck-m5"}}
+]},
+{id:"end",title:"Cierre",icon:"🎓",steps:[
+{id:"post",title:"Auto-evaluación Final",subtitle:"Compara con tu evaluación inicial",badge:"Post-Assessment",time:"3 min",html:`<div class="cb"><p>Responde las mismas preguntas. Compara con tus respuestas anteriores.</p></div><div class="a-grid">${['"Sé qué es Kiro y para qué sirve"','"Puedo usar Kiro para planificar un proyecto"','"Puedo automatizar una tarea repetitiva con Kiro"','"Sé cómo compartir lo que creo en Kiro"','"Me siento capaz de enseñar Kiro a un colega"'].map((q,i)=>`<div class="a-item"><div class="a-q">${i+1}. ${q}</div><div class="r-grp" data-q="post-q${i+1}"></div></div>`).join("")}</div>`,checkpoint:{text:"He completado mi auto-evaluación final",id:"ck-post"}},
+{id:"nps",title:"Feedback y Compromiso",subtitle:"Tu opinión nos ayuda a mejorar",badge:"Feedback",time:"2 min",html:`<div class="cb"><h3>NPS — ¿Recomendarías este workshop?</h3><p>Del 0 al 10:</p><div class="r-grp" data-q="nps" style="margin:14px 0"></div></div><div class="cb" style="margin-top:20px"><h3>Mi compromiso para esta semana</h3><p>UNA cosa concreta que harás con Kiro en 7 días:</p><textarea class="cm-in" id="cmTxt" placeholder="Ej: Crear una spec para mi proyecto de onboarding..."></textarea></div><div class="card c-s" style="margin-top:20px"><span class="c-lb">¿Y después?</span><p>Explora MCP para conectar herramientas externas. Todo se comparte copiando <code>.kiro/</code>.</p></div>`,checkpoint:{text:"He completado el workshop 🎉",id:"ck-done"}}
+]}
+]},
+// ---- ENGLISH ----
+en:{modules:[
+{id:"intro",title:"Welcome",icon:"👋",steps:[
+{id:"w",title:"Welcome to the Workshop",subtitle:"Automate your daily work with AI — no coding required",badge:"Start",time:"5 min",html:`<div class="cb"><h3>What is Kiro?</h3><p>Kiro is an AI assistant inside a code editor — but you don't need to code. Think of it as a smart coworker that can:</p><ul><li>📋 <b>Plan projects</b> — turns a vague idea into clear steps</li><li>🤖 <b>Automate tasks</b> — "when X happens, do Y"</li><li>📄 <b>Analyze documents</b> — reads files, gives actionable insights</li><li>🧠 <b>Remember your context</b> — knows who you are</li></ul></div><div class="card c-i"><span class="c-lb">Who is this for?</span><p>Program Managers, Training Specialists, Ops, Business Analysts — anyone wanting to be more productive with AI without coding.</p></div><div class="cb"><h3>What will you achieve?</h3><ol><li>Chat with Kiro about real work tasks</li><li>Create a structured plan with <b>Specs</b></li><li>Automate a repetitive task with <b>Hooks</b></li><li>Configure <b>Steering</b> for your context</li><li>Learn to share everything with your team</li></ol></div>`},
+{id:"pre",title:"Initial Self-Assessment",subtitle:"Measure your starting point",badge:"Pre-Assessment",time:"2 min",html:`<div class="cb"><p>Rate your current level. Be honest — no right answers. We'll repeat this at the end.</p></div><div class="a-grid">${['"I know what Kiro is and what it\'s for"','"I can use Kiro to plan a project"','"I can automate a repetitive task with Kiro"','"I know how to share what I create in Kiro"','"I feel capable of teaching Kiro to a colleague"'].map((q,i)=>`<div class="a-item"><div class="a-q">${i+1}. ${q}</div><div class="r-grp" data-q="pre-q${i+1}"></div></div>`).join("")}</div>`,checkpoint:{text:"I've completed my initial self-assessment",id:"ck-pre"}}
+]},
+{id:"setup",title:"Setup",icon:"⚙️",steps:[
+{id:"set",title:"Install and Configure Kiro",subtitle:"Prepare your work environment",badge:"Setup",time:"10 min",html:`<div class="card c-t"><span class="c-lb">Before you start</span><p>Already have Kiro installed? Skip to the checkpoint.</p></div><div class="cb"><h3>Step 1: Install Kiro</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Go to <b>kiro.dev</b> and download the installer</p></div></div><div class="ex-s"><div class="ex-sc"><p>Open the file and follow installation instructions</p></div></div><div class="ex-s"><div class="ex-sc"><p>Log in with <b>GitHub</b>, <b>Google</b>, or <b>AWS Builder ID</b></p></div></div></div></div><div class="cb"><h3>Step 2: Create your workspace</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Create a folder called <code>my-kiro-workspace</code></p></div></div><div class="ex-s"><div class="ex-sc"><p>In Kiro: <b>File → Open Folder</b> → select it</p></div></div><div class="ex-s"><div class="ex-sc"><p>Look for the ghost icon 👻 in the left sidebar</p></div></div></div></div><div class="card c-i"><span class="c-lb">Recommended mode</span><p>Use <b>Supervised mode</b> to review each change before accepting.</p></div>`,checkpoint:{text:"I have Kiro open with my folder and see the 👻 panel",id:"ck-set"}}
+]},
+{id:"m1",title:"Module 1: Chat",icon:"💬",steps:[
+{id:"m1i",title:"Chat — Your Personal Assistant",subtitle:"Talk to Kiro in your language about real work",badge:"Module 1",time:"20 min",html:`<div class="cb"><p>Kiro's chat isn't a generic chatbot. It can <b>see your files</b>, <b>create documents</b>, and <b>execute actions</b> — all in natural language.</p></div><div class="card c-i"><span class="c-lb">Key fact</span><p>Kiro understands English, Spanish, Italian, German, French, and many more.</p></div>`},
+{id:"m1e1",title:"Exercise 1.1: Your First Conversation",subtitle:"Introduce yourself to Kiro",badge:"Exercise",time:"8 min",html:`<div class="cb"><h3>Instructions</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Open chat: click 👻 or <b>Ctrl+L</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Copy and paste, adapting to your role:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copy</button>I'm a [your role] on the [your team] team. My daily work includes [2-3 main tasks].
+How can you help me with these tasks without me knowing how to code?</div></div></div><div class="ex-s"><div class="ex-sc"><p>Read the response and ask a follow-up question</p></div></div></div></div><div class="card c-t"><span class="c-lb">Example</span><p><em>"I'm a Training Specialist on GenAI. I design workshops, track participants, and analyze surveys. How can you help?"</em></p></div>`,checkpoint:{text:"Kiro gave me at least 3 concrete ideas",id:"ck-m1e1"}},
+{id:"m1e2",title:"Exercise 1.2: Analyze a Document",subtitle:"Drag a file and let Kiro analyze it",badge:"Exercise",time:"10 min",html:`<div class="cb"><h3>Instructions</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Find a work file (Excel, PDF, Word). Or create a simple .txt.</p></div></div><div class="ex-s"><div class="ex-sc"><p><b>Drag the file into Kiro's chat</b> (or click 📎)</p></div></div><div class="ex-s"><div class="ex-sc"><p>Type this prompt:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copy</button>Analyze this document and tell me:
+1. What patterns do you see?
+2. What could be improved?
+3. What repetitive tasks could I automate?</div></div></div></div></div>`,checkpoint:{text:"Kiro analyzed my document with actionable insights",id:"ck-m1e2"}}
+]},
+{id:"m2",title:"Module 2: Specs",icon:"📐",steps:[
+{id:"m2i",title:"Specs — Plan Like a Pro",subtitle:"Turn a vague idea into a structured plan",badge:"Module 2",time:"25 min",html:`<div class="cb"><p><b>Specs</b> is the most powerful feature for non-devs:</p><ol><li>Describe a project in natural language</li><li>Kiro generates <b>Requirements</b></li><li>Kiro generates <b>Design</b></li><li>Kiro generates <b>Tasks</b></li></ol></div><div class="card c-i"><span class="c-lb">Where is it saved?</span><p>In <code>.kiro/specs/your-project/</code> — managed automatically.</p></div>`},
+{id:"m2e1",title:"Exercise 2.1: Your First Spec",subtitle:"Describe a real project",badge:"Exercise",time:"15 min",html:`<div class="cb"><h3>Instructions</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Kiro panel → <b>"Specs"</b> → click <b>+</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Describe your project:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copy</button>I want to [concrete goal].
+The audience is [who].
+Today I do it by [manual process].
+The problem is [pain point].</div></div></div><div class="ex-s"><div class="ex-sc"><p>Review Requirements, Design, and Tasks</p></div></div></div></div><div class="card c-w"><span class="c-lb">Be patient</span><p>Each phase takes 1-3 minutes. That's normal.</p></div>`,checkpoint:{text:"I have a spec with Requirements, Design and Tasks",id:"ck-m2e1"}},
+{id:"m2e2",title:"Exercise 2.2: Run a Task",subtitle:"Put Kiro to work",badge:"⭐ Bonus",time:"8 min",html:`<div class="card c-t"><span class="c-lb">Bonus</span><p>Try if you have time. Otherwise, do it later.</p></div><div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Open <b>tasks.md</b> → pick a task → click <b>"Run"</b></p></div></div></div></div>`,checkpoint:{text:"Kiro ran a task and generated something concrete",id:"ck-m2e2"}}
+]},
+{id:"m3",title:"Module 3: Hooks",icon:"🔁",steps:[
+{id:"m3i",title:"Hooks — Automate the Repetitive",subtitle:"When X happens, do Y automatically",badge:"Module 3",time:"20 min",html:`<div class="cb"><table class="w-tbl"><thead><tr><th>When this happens...</th><th>Kiro does this</th></tr></thead><tbody><tr><td>I save a file</td><td>Reviews it</td></tr><tr><td>I create a new file</td><td>Adds base structure</td></tr><tr><td>I press a button</td><td>Generates a summary</td></tr></tbody></table></div>`},
+{id:"m3e1",title:"Exercise 3.1: Auto-Review Hook",subtitle:"Kiro reviews every file you save",badge:"Exercise",time:"10 min",html:`<div class="cb"><h3>Instructions</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Kiro panel → <b>"Agent Hooks"</b> → <b>+</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Choose <b>"Ask Kiro to create a hook"</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Describe:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copy</button>Every time I save a markdown file,
+I want Kiro to review it and tell me:
+- If it has spelling or grammar errors
+- If the tone is professional but approachable
+- If it's missing any important sections</div></div></div><div class="ex-s"><div class="ex-sc"><p><b>Test it:</b> Edit a .md file and save (Ctrl+S)</p></div></div></div></div>`,checkpoint:{text:"On save, Kiro gave me suggestions automatically",id:"ck-m3e1"}},
+{id:"m3e2",title:"Exercise 3.2: Manual Hook",subtitle:"A button that generates summaries",badge:"Exercise",time:"8 min",html:`<div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Create another hook:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copy</button>I want a button that generates an executive summary
+of the open file, bullet points, max 5 points.</div></div></div><div class="ex-s"><div class="ex-sc"><p>Click <b>▷ (play)</b> next to the hook</p></div></div></div></div><div class="card c-s"><span class="c-lb">You just automated!</span><p>Two automations: one automatic (on save) and one manual (button).</p></div>`,checkpoint:{text:"I can generate summaries with one click",id:"ck-m3e2"}}
+]},
+{id:"m4",title:"Module 4: Steering",icon:"🧭",steps:[
+{id:"m4i",title:"Steering — Kiro Knows You",subtitle:"Kiro always knows who you are",badge:"Module 4",time:"15 min",html:`<div class="cb"><p><b>Steering</b> makes Kiro YOUR assistant. It always knows:</p><ul><li>Who you are</li><li>Your current projects</li><li>How you like info delivered</li><li>Your tools</li><li>Your audience</li></ul></div>`},
+{id:"m4e1",title:"Exercise 4.1: Your Personal Steering",subtitle:"Configure your work context",badge:"Exercise",time:"12 min",html:`<div class="cb"><h3>Instructions</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Open chat and paste:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copy</button>Create a steering file at .kiro/steering/my-context.md with this content:
+
+# My Work Context
+## Who I am
+- Role: [your role]
+- Team: [your team]
+- Region: [your region]
+## Current projects
+- [Project 1]: [description]
+## How I like to work
+- Language: English
+- Tone: Professional but approachable
+- Format: Bullet points and tables
+- Always include: Actionable next steps
+## Tools I use
+- [Excel, PowerPoint, SharePoint, etc.]</div></div></div><div class="ex-s"><div class="ex-sc"><p>Replace [placeholders] with your real info</p></div></div><div class="ex-s"><div class="ex-sc"><p><b>Test:</b> New chat → <em>"help me prepare my next session"</em></p></div></div></div></div><div class="card c-s"><span class="c-lb">The power of steering</span><p>Kiro now knows who you are. No more repeating context.</p></div>`,checkpoint:{text:"Kiro responds with my context without reminding",id:"ck-m4e1"}}
+]},
+{id:"m5",title:"Module 5: Share",icon:"🤝",steps:[
+{id:"m5s",title:"Share and Scale",subtitle:"Everything lives in shareable files",badge:"Module 5",time:"10 min",html:`<div class="cb"><table class="w-tbl"><thead><tr><th>What</th><th>Where</th><th>How</th></tr></thead><tbody><tr><td>Specs</td><td><code>.kiro/specs/</code></td><td>Copy folder</td></tr><tr><td>Hooks</td><td><code>.kiro/hooks/</code></td><td>Copy files</td></tr><tr><td>Steering</td><td><code>.kiro/steering/</code></td><td>Copy files</td></tr></tbody></table></div><div class="card c-i"><span class="c-lb">Option A: Shared folder</span><p>Copy to SharePoint/OneDrive. Colleague opens with Kiro → done.</p></div><div class="card c-i"><span class="c-lb">Option B: Repository</span><p>Version control syncs automatically.</p></div><div class="card c-i"><span class="c-lb">Option C: Template</span><p>Package workshop + .kiro/ + examples.</p></div>`,checkpoint:{text:"I know what to share and how",id:"ck-m5"}}
+]},
+{id:"end",title:"Closing",icon:"🎓",steps:[
+{id:"post",title:"Final Self-Assessment",subtitle:"Compare with your initial assessment",badge:"Post-Assessment",time:"3 min",html:`<div class="cb"><p>Same questions. Compare with your earlier answers.</p></div><div class="a-grid">${['"I know what Kiro is and what it\'s for"','"I can use Kiro to plan a project"','"I can automate a repetitive task with Kiro"','"I know how to share what I create in Kiro"','"I feel capable of teaching Kiro to a colleague"'].map((q,i)=>`<div class="a-item"><div class="a-q">${i+1}. ${q}</div><div class="r-grp" data-q="post-q${i+1}"></div></div>`).join("")}</div>`,checkpoint:{text:"I've completed my final self-assessment",id:"ck-post"}},
+{id:"nps",title:"Feedback & Commitment",subtitle:"Your opinion helps us improve",badge:"Feedback",time:"2 min",html:`<div class="cb"><h3>NPS — Would you recommend this workshop?</h3><p>From 0 to 10:</p><div class="r-grp" data-q="nps" style="margin:14px 0"></div></div><div class="cb" style="margin-top:20px"><h3>My commitment this week</h3><p>ONE concrete thing you'll do with Kiro in 7 days:</p><textarea class="cm-in" id="cmTxt" placeholder="E.g.: Create a spec for my Q3 onboarding project..."></textarea></div>`,checkpoint:{text:"I've completed the workshop 🎉",id:"ck-done"}}
+]}
+]},
+// ---- ITALIANO ----
+it:{modules:[
+{id:"intro",title:"Benvenuto",icon:"👋",steps:[
+{id:"w",title:"Benvenuto/a al Workshop",subtitle:"Automatizza il tuo lavoro con l'IA — senza codice",badge:"Inizio",time:"5 min",html:`<div class="cb"><h3>Cos'è Kiro?</h3><p>Kiro è un assistente IA in un editor di codice — ma non devi saper programmare. È un collega intelligente che può:</p><ul><li>📋 <b>Pianificare progetti</b></li><li>🤖 <b>Automatizzare compiti</b></li><li>📄 <b>Analizzare documenti</b></li><li>🧠 <b>Ricordare il tuo contesto</b></li></ul></div><div class="card c-i"><span class="c-lb">Per chi è?</span><p>Program Manager, Training Specialist, Ops, Business Analyst — chiunque voglia essere più produttivo con l'IA.</p></div><div class="cb"><h3>Cosa otterrai oggi?</h3><ol><li>Conversare con Kiro su compiti reali</li><li>Creare un piano strutturato con <b>Specs</b></li><li>Automatizzare con <b>Hooks</b></li><li>Configurare <b>Steering</b></li><li>Condividere tutto con il team</li></ol></div>`},
+{id:"pre",title:"Auto-valutazione Iniziale",subtitle:"Misura il tuo punto di partenza",badge:"Pre-Assessment",time:"2 min",html:`<div class="cb"><p>Valuta il tuo livello attuale. Sii onesto/a.</p></div><div class="a-grid">${['"So cos\'è Kiro e a cosa serve"','"Posso usare Kiro per pianificare"','"Posso automatizzare un compito con Kiro"','"So come condividere ciò che creo"','"Mi sento capace di insegnare Kiro"'].map((q,i)=>`<div class="a-item"><div class="a-q">${i+1}. ${q}</div><div class="r-grp" data-q="pre-q${i+1}"></div></div>`).join("")}</div>`,checkpoint:{text:"Ho completato la mia auto-valutazione",id:"ck-pre"}}
+]},
+{id:"setup",title:"Setup",icon:"⚙️",steps:[{id:"set",title:"Installare Kiro",subtitle:"Prepara il tuo ambiente",badge:"Setup",time:"10 min",html:`<div class="card c-t"><span class="c-lb">Prima di iniziare</span><p>Kiro già installato? Salta al checkpoint.</p></div><div class="cb"><h3>Passo 1: Installare</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Vai su <b>kiro.dev</b> e scarica l'installer</p></div></div><div class="ex-s"><div class="ex-sc"><p>Segui le istruzioni di installazione</p></div></div><div class="ex-s"><div class="ex-sc"><p>Accedi con <b>GitHub</b>, <b>Google</b>, o <b>AWS Builder ID</b></p></div></div></div></div><div class="cb"><h3>Passo 2: Workspace</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Crea una cartella <code>mio-workspace-kiro</code></p></div></div><div class="ex-s"><div class="ex-sc"><p><b>File → Open Folder</b> → seleziona</p></div></div><div class="ex-s"><div class="ex-sc"><p>Cerca l'icona 👻 nella barra laterale</p></div></div></div></div><div class="card c-i"><span class="c-lb">Modalità consigliata</span><p>Usa la <b>modalità Supervisionata</b>.</p></div>`,checkpoint:{text:"Ho Kiro aperto con la mia cartella e vedo 👻",id:"ck-set"}}]},
+{id:"m1",title:"Modulo 1: Chat",icon:"💬",steps:[
+{id:"m1i",title:"Chat — Il Tuo Assistente",subtitle:"Parla con Kiro nella tua lingua",badge:"Modulo 1",time:"20 min",html:`<div class="cb"><p>La chat di Kiro può <b>vedere i tuoi file</b>, <b>creare documenti</b>, ed <b>eseguire azioni</b>.</p></div><div class="card c-i"><span class="c-lb">Dato chiave</span><p>Kiro capisce italiano, inglese, spagnolo, tedesco e molte altre lingue.</p></div>`},
+{id:"m1e1",title:"Esercizio 1.1: Prima Conversazione",subtitle:"Presentati a Kiro",badge:"Esercizio",time:"8 min",html:`<div class="cb"><h3>Istruzioni</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Apri la chat: 👻 o <b>Ctrl+L</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Copia e incolla:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copia</button>Sono [il tuo ruolo] nel team [il tuo team]. Il mio lavoro include [2-3 compiti].
+Come puoi aiutarmi senza che io sappia programmare?</div></div></div><div class="ex-s"><div class="ex-sc"><p>Leggi la risposta e fai una domanda di approfondimento</p></div></div></div></div>`,checkpoint:{text:"Kiro mi ha dato almeno 3 idee concrete",id:"ck-m1e1"}},
+{id:"m1e2",title:"Esercizio 1.2: Analizzare un Documento",subtitle:"Trascina un file reale",badge:"Esercizio",time:"10 min",html:`<div class="cb"><h3>Istruzioni</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Trova un file di lavoro o crea un .txt</p></div></div><div class="ex-s"><div class="ex-sc"><p><b>Trascina nella chat</b> (o clicca 📎)</p></div></div><div class="ex-s"><div class="ex-sc"><p>Scrivi:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copia</button>Analizza questo documento e dimmi:
+1. Quali pattern vedi?
+2. Cosa potrebbe migliorare?
+3. Quali compiti potrei automatizzare?</div></div></div></div></div>`,checkpoint:{text:"Kiro ha analizzato il mio documento",id:"ck-m1e2"}}
+]},
+{id:"m2",title:"Modulo 2: Specs",icon:"📐",steps:[
+{id:"m2i",title:"Specs — Pianifica Come un Pro",subtitle:"Da idea vaga a piano strutturato",badge:"Modulo 2",time:"25 min",html:`<div class="cb"><p><b>Specs</b>: descrivi → Requirements → Design → Tasks</p></div>`},
+{id:"m2e1",title:"Esercizio 2.1: La Tua Prima Spec",subtitle:"Descrivi un progetto reale",badge:"Esercizio",time:"15 min",html:`<div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Pannello Kiro → <b>"Specs"</b> → <b>+</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Descrivi:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copia</button>Voglio [obiettivo concreto].
+Il pubblico è [chi].
+Oggi lo faccio [come].
+Il problema è [quale dolore].</div></div></div><div class="ex-s"><div class="ex-sc"><p>Rivedi Requirements, Design e Tasks</p></div></div></div></div>`,checkpoint:{text:"Ho una spec con Requirements, Design e Tasks",id:"ck-m2e1"}},
+{id:"m2e2",title:"Esercizio 2.2: Eseguire un Task",subtitle:"Metti Kiro al lavoro",badge:"⭐ Bonus",time:"8 min",html:`<div class="card c-t"><span class="c-lb">Bonus</span><p>Se hai tempo, prova. Altrimenti dopo.</p></div><div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Apri <b>tasks.md</b> → scegli → <b>"Run"</b></p></div></div></div></div>`,checkpoint:{text:"Kiro ha eseguito un task",id:"ck-m2e2"}}
+]},
+{id:"m3",title:"Modulo 3: Hooks",icon:"🔁",steps:[
+{id:"m3i",title:"Hooks — Automatizza",subtitle:"Quando succede X, fai Y",badge:"Modulo 3",time:"20 min",html:`<div class="cb"><table class="w-tbl"><thead><tr><th>Quando...</th><th>Kiro fa...</th></tr></thead><tbody><tr><td>Salvo un file</td><td>Lo revisiona</td></tr><tr><td>Creo un file</td><td>Aggiunge struttura</td></tr><tr><td>Premo un pulsante</td><td>Genera riassunto</td></tr></tbody></table></div>`},
+{id:"m3e1",title:"Esercizio 3.1: Hook Automatico",subtitle:"Revisione automatica al salvataggio",badge:"Esercizio",time:"10 min",html:`<div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p><b>"Agent Hooks"</b> → <b>+</b> → <b>"Ask Kiro to create a hook"</b></p></div></div><div class="ex-s"><div class="ex-sc"><div class="code"><button class="cp-btn" onclick="CC(this)">Copia</button>Ogni volta che salvo un file markdown,
+voglio che Kiro lo revisioni e mi dica:
+- Se ha errori di ortografia o grammatica
+- Se il tono è professionale ma accessibile
+- Se manca qualche sezione importante</div></div></div><div class="ex-s"><div class="ex-sc"><p><b>Prova:</b> Modifica un .md e salva (Ctrl+S)</p></div></div></div></div>`,checkpoint:{text:"Al salvataggio, Kiro mi ha dato suggerimenti",id:"ck-m3e1"}},
+{id:"m3e2",title:"Esercizio 3.2: Hook Manuale",subtitle:"Pulsante per riassunti",badge:"Esercizio",time:"8 min",html:`<div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><div class="code"><button class="cp-btn" onclick="CC(this)">Copia</button>Voglio un pulsante che generi un riassunto esecutivo
+del file aperto, bullet points, massimo 5 punti, in italiano.</div></div></div><div class="ex-s"><div class="ex-sc"><p>Clicca <b>▷</b> per eseguirlo</p></div></div></div></div><div class="card c-s"><span class="c-lb">Hai automatizzato!</span><p>Due automazioni: automatica e manuale.</p></div>`,checkpoint:{text:"Posso generare riassunti con un clic",id:"ck-m3e2"}}
+]},
+{id:"m4",title:"Modulo 4: Steering",icon:"🧭",steps:[
+{id:"m4i",title:"Steering — Kiro Ti Conosce",subtitle:"Sa sempre chi sei",badge:"Modulo 4",time:"15 min",html:`<div class="cb"><p><b>Steering</b> rende Kiro il TUO assistente.</p><ul><li>Chi sei</li><li>I tuoi progetti</li><li>Come vuoi le info</li><li>I tuoi strumenti</li></ul></div>`},
+{id:"m4e1",title:"Esercizio 4.1: Il Tuo Steering",subtitle:"Configura il tuo contesto",badge:"Esercizio",time:"12 min",html:`<div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Nella chat, incolla:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Copia</button>Crea un file di steering in .kiro/steering/mio-contesto.md:
+
+# Il Mio Contesto
+## Chi sono
+- Ruolo: [il tuo ruolo]
+- Team: [il tuo team]
+## Progetti attuali
+- [Progetto 1]: [descrizione]
+## Come lavoro
+- Lingua: Italiano
+- Tono: Professionale ma accessibile
+- Formato: Bullet points e tabelle</div></div></div><div class="ex-s"><div class="ex-sc"><p>Sostituisci i [placeholder]</p></div></div><div class="ex-s"><div class="ex-sc"><p><b>Prova:</b> Nuova chat → <em>"aiutami a preparare la prossima sessione"</em></p></div></div></div></div>`,checkpoint:{text:"Kiro risponde con il mio contesto",id:"ck-m4e1"}}
+]},
+{id:"m5",title:"Modulo 5: Condividere",icon:"🤝",steps:[{id:"m5s",title:"Condividere e Scalare",subtitle:"Tutto in file condivisibili",badge:"Modulo 5",time:"10 min",html:`<div class="cb"><table class="w-tbl"><thead><tr><th>Cosa</th><th>Dove</th><th>Come</th></tr></thead><tbody><tr><td>Specs</td><td><code>.kiro/specs/</code></td><td>Copia</td></tr><tr><td>Hooks</td><td><code>.kiro/hooks/</code></td><td>Copia</td></tr><tr><td>Steering</td><td><code>.kiro/steering/</code></td><td>Copia</td></tr></tbody></table></div>`,checkpoint:{text:"So cosa condividere e come",id:"ck-m5"}}]},
+{id:"end",title:"Chiusura",icon:"🎓",steps:[
+{id:"post",title:"Auto-valutazione Finale",subtitle:"Confronta con l'inizio",badge:"Post-Assessment",time:"3 min",html:`<div class="cb"><p>Stesse domande. Confronta.</p></div><div class="a-grid">${['"So cos\'è Kiro"','"Posso pianificare con Kiro"','"Posso automatizzare con Kiro"','"So condividere"','"Posso insegnare Kiro"'].map((q,i)=>`<div class="a-item"><div class="a-q">${i+1}. ${q}</div><div class="r-grp" data-q="post-q${i+1}"></div></div>`).join("")}</div>`,checkpoint:{text:"Auto-valutazione finale completata",id:"ck-post"}},
+{id:"nps",title:"Feedback",subtitle:"La tua opinione conta",badge:"Feedback",time:"2 min",html:`<div class="cb"><h3>NPS — Consiglieresti questo workshop?</h3><p>Da 0 a 10:</p><div class="r-grp" data-q="nps" style="margin:14px 0"></div></div><div class="cb" style="margin-top:20px"><h3>Il mio impegno</h3><p>UNA cosa con Kiro in 7 giorni:</p><textarea class="cm-in" id="cmTxt" placeholder="Es: Creerò una spec per il mio progetto..."></textarea></div>`,checkpoint:{text:"Workshop completato 🎉",id:"ck-done"}}
+]}
+]},
+// ---- DEUTSCH ----
+de:{modules:[
+{id:"intro",title:"Willkommen",icon:"👋",steps:[
+{id:"w",title:"Willkommen zum Workshop",subtitle:"Automatisiere deine Arbeit mit KI — ohne Code",badge:"Start",time:"5 Min",html:`<div class="cb"><h3>Was ist Kiro?</h3><p>Kiro ist ein KI-Assistent in einem Code-Editor — aber du musst nicht programmieren können:</p><ul><li>📋 <b>Projekte planen</b></li><li>🤖 <b>Aufgaben automatisieren</b></li><li>📄 <b>Dokumente analysieren</b></li><li>🧠 <b>Deinen Kontext merken</b></li></ul></div><div class="card c-i"><span class="c-lb">Für wen?</span><p>Program Manager, Training Specialists, Ops, Business Analysts — alle, die produktiver mit KI sein wollen.</p></div><div class="cb"><h3>Was erreichst du heute?</h3><ol><li>Mit Kiro über echte Aufgaben sprechen</li><li>Einen strukturierten Plan mit <b>Specs</b> erstellen</li><li>Eine Aufgabe mit <b>Hooks</b> automatisieren</li><li><b>Steering</b> konfigurieren</li><li>Alles mit dem Team teilen</li></ol></div>`},
+{id:"pre",title:"Selbsteinschätzung",subtitle:"Messe deinen Ausgangspunkt",badge:"Pre-Assessment",time:"2 Min",html:`<div class="cb"><p>Bewerte dein aktuelles Niveau. Sei ehrlich.</p></div><div class="a-grid">${['"Ich weiß, was Kiro ist"','"Ich kann mit Kiro planen"','"Ich kann mit Kiro automatisieren"','"Ich weiß, wie ich teile"','"Ich kann Kiro einem Kollegen beibringen"'].map((q,i)=>`<div class="a-item"><div class="a-q">${i+1}. ${q}</div><div class="r-grp" data-q="pre-q${i+1}"></div></div>`).join("")}</div>`,checkpoint:{text:"Selbsteinschätzung abgeschlossen",id:"ck-pre"}}
+]},
+{id:"setup",title:"Setup",icon:"⚙️",steps:[{id:"set",title:"Kiro installieren",subtitle:"Bereite deine Umgebung vor",badge:"Setup",time:"10 Min",html:`<div class="card c-t"><span class="c-lb">Vorher</span><p>Kiro schon installiert? Springe zum Checkpoint.</p></div><div class="cb"><h3>Schritt 1: Installieren</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Gehe zu <b>kiro.dev</b> und lade den Installer herunter</p></div></div><div class="ex-s"><div class="ex-sc"><p>Folge den Installationsanweisungen</p></div></div><div class="ex-s"><div class="ex-sc"><p>Melde dich mit <b>GitHub</b>, <b>Google</b> oder <b>AWS Builder ID</b> an</p></div></div></div></div><div class="cb"><h3>Schritt 2: Workspace</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Erstelle einen Ordner <code>mein-kiro-workspace</code></p></div></div><div class="ex-s"><div class="ex-sc"><p><b>File → Open Folder</b> → auswählen</p></div></div><div class="ex-s"><div class="ex-sc"><p>Suche das Geist-Symbol 👻 in der Seitenleiste</p></div></div></div></div><div class="card c-i"><span class="c-lb">Empfohlener Modus</span><p>Nutze den <b>Überwachten Modus</b>.</p></div>`,checkpoint:{text:"Kiro ist offen mit meinem Ordner und ich sehe 👻",id:"ck-set"}}]},
+{id:"m1",title:"Modul 1: Chat",icon:"💬",steps:[
+{id:"m1i",title:"Chat — Dein Assistent",subtitle:"Sprich mit Kiro in deiner Sprache",badge:"Modul 1",time:"20 Min",html:`<div class="cb"><p>Kiros Chat kann <b>Dateien sehen</b>, <b>Dokumente erstellen</b> und <b>Aktionen ausführen</b>.</p></div><div class="card c-i"><span class="c-lb">Wichtig</span><p>Kiro versteht Deutsch, Englisch, Spanisch, Italienisch und viele weitere Sprachen.</p></div>`},
+{id:"m1e1",title:"Übung 1.1: Erstes Gespräch",subtitle:"Stelle dich Kiro vor",badge:"Übung",time:"8 Min",html:`<div class="cb"><h3>Anleitung</h3><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Chat öffnen: 👻 oder <b>Ctrl+L</b></p></div></div><div class="ex-s"><div class="ex-sc"><p>Kopiere und füge ein:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Kopieren</button>Ich bin [deine Rolle] im Team [dein Team]. Meine tägliche Arbeit umfasst [2-3 Aufgaben].
+Wie kannst du mir helfen, ohne dass ich programmieren kann?</div></div></div><div class="ex-s"><div class="ex-sc"><p>Lies die Antwort und stelle eine Nachfrage</p></div></div></div></div>`,checkpoint:{text:"Kiro gab mir mindestens 3 konkrete Ideen",id:"ck-m1e1"}},
+{id:"m1e2",title:"Übung 1.2: Dokument analysieren",subtitle:"Ziehe eine Datei in den Chat",badge:"Übung",time:"10 Min",html:`<div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Finde eine Arbeitsdatei oder erstelle eine .txt</p></div></div><div class="ex-s"><div class="ex-sc"><p><b>Ziehe die Datei in den Chat</b> (oder klicke 📎)</p></div></div><div class="ex-s"><div class="ex-sc"><div class="code"><button class="cp-btn" onclick="CC(this)">Kopieren</button>Analysiere dieses Dokument und sage mir:
+1. Welche Muster siehst du?
+2. Was könnte verbessert werden?
+3. Welche Aufgaben könnte ich automatisieren?</div></div></div></div></div>`,checkpoint:{text:"Kiro hat mein Dokument analysiert",id:"ck-m1e2"}}
+]},
+{id:"m2",title:"Modul 2: Specs",icon:"📐",steps:[
+{id:"m2i",title:"Specs — Plane wie ein Profi",subtitle:"Von der Idee zum strukturierten Plan",badge:"Modul 2",time:"25 Min",html:`<div class="cb"><p><b>Specs</b>: Beschreibe → Requirements → Design → Tasks</p></div>`},
+{id:"m2e1",title:"Übung 2.1: Deine erste Spec",subtitle:"Beschreibe ein echtes Projekt",badge:"Übung",time:"15 Min",html:`<div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Kiro-Panel → <b>"Specs"</b> → <b>+</b></p></div></div><div class="ex-s"><div class="ex-sc"><div class="code"><button class="cp-btn" onclick="CC(this)">Kopieren</button>Ich möchte [konkretes Ziel].
+Die Zielgruppe ist [wer].
+Heute mache ich es [wie manuell].
+Das Problem ist [welcher Schmerz].</div></div></div><div class="ex-s"><div class="ex-sc"><p>Überprüfe Requirements, Design und Tasks</p></div></div></div></div>`,checkpoint:{text:"Ich habe eine Spec mit Requirements, Design und Tasks",id:"ck-m2e1"}},
+{id:"m2e2",title:"Übung 2.2: Task ausführen",subtitle:"Lass Kiro arbeiten",badge:"⭐ Bonus",time:"8 Min",html:`<div class="card c-t"><span class="c-lb">Bonus</span><p>Wenn du Zeit hast. Sonst später.</p></div><div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p><b>tasks.md</b> öffnen → Task wählen → <b>"Run"</b></p></div></div></div></div>`,checkpoint:{text:"Kiro hat einen Task ausgeführt",id:"ck-m2e2"}}
+]},
+{id:"m3",title:"Modul 3: Hooks",icon:"🔁",steps:[
+{id:"m3i",title:"Hooks — Automatisiere",subtitle:"Wenn X passiert, mache Y",badge:"Modul 3",time:"20 Min",html:`<div class="cb"><table class="w-tbl"><thead><tr><th>Wenn...</th><th>Kiro macht...</th></tr></thead><tbody><tr><td>Ich speichere</td><td>Überprüft die Datei</td></tr><tr><td>Neue Datei</td><td>Fügt Struktur hinzu</td></tr><tr><td>Ich drücke einen Knopf</td><td>Erstellt Zusammenfassung</td></tr></tbody></table></div>`},
+{id:"m3e1",title:"Übung 3.1: Auto-Review Hook",subtitle:"Automatische Überprüfung beim Speichern",badge:"Übung",time:"10 Min",html:`<div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p><b>"Agent Hooks"</b> → <b>+</b> → <b>"Ask Kiro to create a hook"</b></p></div></div><div class="ex-s"><div class="ex-sc"><div class="code"><button class="cp-btn" onclick="CC(this)">Kopieren</button>Jedes Mal wenn ich eine Markdown-Datei speichere,
+soll Kiro sie überprüfen und mir sagen:
+- Ob es Rechtschreib- oder Grammatikfehler gibt
+- Ob der Ton professionell aber zugänglich ist
+- Ob wichtige Abschnitte fehlen</div></div></div><div class="ex-s"><div class="ex-sc"><p><b>Teste:</b> Bearbeite eine .md und speichere (Ctrl+S)</p></div></div></div></div>`,checkpoint:{text:"Beim Speichern gab Kiro mir automatisch Vorschläge",id:"ck-m3e1"}},
+{id:"m3e2",title:"Übung 3.2: Manueller Hook",subtitle:"Ein Knopf für Zusammenfassungen",badge:"Übung",time:"8 Min",html:`<div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><div class="code"><button class="cp-btn" onclick="CC(this)">Kopieren</button>Ich möchte einen Knopf, der eine Zusammenfassung
+der offenen Datei erstellt, Stichpunkte, maximal 5 Punkte.</div></div></div><div class="ex-s"><div class="ex-sc"><p>Klicke <b>▷</b> zum Ausführen</p></div></div></div></div><div class="card c-s"><span class="c-lb">Automatisiert!</span><p>Zwei Automatisierungen: automatisch und manuell.</p></div>`,checkpoint:{text:"Ich kann Zusammenfassungen per Klick erstellen",id:"ck-m3e2"}}
+]},
+{id:"m4",title:"Modul 4: Steering",icon:"🧭",steps:[
+{id:"m4i",title:"Steering — Kiro kennt dich",subtitle:"Kiro weiß immer, wer du bist",badge:"Modul 4",time:"15 Min",html:`<div class="cb"><p><b>Steering</b> macht Kiro zu DEINEM Assistenten.</p><ul><li>Wer du bist</li><li>Deine Projekte</li><li>Wie du Infos magst</li><li>Deine Tools</li></ul></div>`},
+{id:"m4e1",title:"Übung 4.1: Dein Steering",subtitle:"Konfiguriere deinen Kontext",badge:"Übung",time:"12 Min",html:`<div class="cb"><div class="ex-steps"><div class="ex-s"><div class="ex-sc"><p>Im Chat einfügen:</p><div class="code"><button class="cp-btn" onclick="CC(this)">Kopieren</button>Erstelle eine Steering-Datei unter .kiro/steering/mein-kontext.md:
+
+# Mein Arbeitskontext
+## Wer ich bin
+- Rolle: [deine Rolle]
+- Team: [dein Team]
+## Aktuelle Projekte
+- [Projekt 1]: [Beschreibung]
+## Wie ich arbeite
+- Sprache: Deutsch
+- Ton: Professionell aber zugänglich
+- Format: Stichpunkte und Tabellen</div></div></div><div class="ex-s"><div class="ex-sc"><p>Ersetze die [Platzhalter]</p></div></div><div class="ex-s"><div class="ex-sc"><p><b>Teste:</b> Neuer Chat → <em>"hilf mir bei meiner nächsten Sitzung"</em></p></div></div></div></div>`,checkpoint:{text:"Kiro antwortet mit meinem Kontext",id:"ck-m4e1"}}
+]},
+{id:"m5",title:"Modul 5: Teilen",icon:"🤝",steps:[{id:"m5s",title:"Teilen und Skalieren",subtitle:"Alles in teilbaren Dateien",badge:"Modul 5",time:"10 Min",html:`<div class="cb"><table class="w-tbl"><thead><tr><th>Was</th><th>Wo</th><th>Wie</th></tr></thead><tbody><tr><td>Specs</td><td><code>.kiro/specs/</code></td><td>Kopieren</td></tr><tr><td>Hooks</td><td><code>.kiro/hooks/</code></td><td>Kopieren</td></tr><tr><td>Steering</td><td><code>.kiro/steering/</code></td><td>Kopieren</td></tr></tbody></table></div>`,checkpoint:{text:"Ich weiß, was ich teilen kann und wie",id:"ck-m5"}}]},
+{id:"end",title:"Abschluss",icon:"🎓",steps:[
+{id:"post",title:"Finale Selbsteinschätzung",subtitle:"Vergleiche mit dem Anfang",badge:"Post-Assessment",time:"3 Min",html:`<div class="cb"><p>Gleiche Fragen. Vergleiche.</p></div><div class="a-grid">${['"Ich weiß, was Kiro ist"','"Ich kann mit Kiro planen"','"Ich kann automatisieren"','"Ich weiß, wie ich teile"','"Ich kann Kiro beibringen"'].map((q,i)=>`<div class="a-item"><div class="a-q">${i+1}. ${q}</div><div class="r-grp" data-q="post-q${i+1}"></div></div>`).join("")}</div>`,checkpoint:{text:"Finale Selbsteinschätzung abgeschlossen",id:"ck-post"}},
+{id:"nps",title:"Feedback",subtitle:"Deine Meinung zählt",badge:"Feedback",time:"2 Min",html:`<div class="cb"><h3>NPS — Würdest du diesen Workshop empfehlen?</h3><p>Von 0 bis 10:</p><div class="r-grp" data-q="nps" style="margin:14px 0"></div></div><div class="cb" style="margin-top:20px"><h3>Mein Vorsatz</h3><p>EINE konkrete Sache mit Kiro in 7 Tagen:</p><textarea class="cm-in" id="cmTxt" placeholder="Z.B.: Eine Spec für mein Q3-Projekt erstellen..."></textarea></div>`,checkpoint:{text:"Workshop abgeschlossen 🎉",id:"ck-done"}}
+]}
+]}
+};// end W
+// ===== APP LOGIC =====
+const SK='kiro-ws',LK='kiro-ws-lang';
+let S=load(),lang=getLang(),steps=[],ci=0;
+
+function load(){try{return JSON.parse(localStorage.getItem(SK))||{}}catch{return{}}}
+function save(){localStorage.setItem(SK,JSON.stringify(S))}
+function getLang(){const p=new URLSearchParams(location.search).get('lang');if(p&&W[p]){localStorage.setItem(LK,p);return p}return localStorage.getItem(LK)||''}
+function u(){return U[lang]||U.es}
+
+// Language picker
+function initLangPicker(){
+  if(lang){document.getElementById('langPicker').classList.add('hidden');document.getElementById('app').classList.remove('hidden');boot();return}
+  let sel='';
+  document.querySelectorAll('.lp-btn').forEach(b=>{
+    b.onclick=()=>{document.querySelectorAll('.lp-btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');sel=b.dataset.lang;document.getElementById('lpGo').classList.add('active')}
+  });
+  document.getElementById('lpGo').onclick=()=>{if(!sel)return;lang=sel;localStorage.setItem(LK,sel);
+    // Update URL with lang param for sharing
+    const url=new URL(location.href);url.searchParams.set('lang',sel);history.replaceState(null,'',url);
+    document.getElementById('langPicker').classList.add('hidden');document.getElementById('app').classList.remove('hidden');boot()}
+}
+
+function boot(){
+  const d=D(lang);steps=[];
+  d.modules.forEach(m=>m.steps.forEach(s=>steps.push({...s,mId:m.id,mTitle:m.title,mIcon:m.icon})));
+  if(S.ci!=null&&S.ci<steps.length)ci=S.ci;
+  document.getElementById('sbSub').textContent=u().sub;
+  document.getElementById('resetBtn').textContent=u().resetT;
+  document.getElementById('resetBtn').title=u().resetT;
+  document.getElementById('langBtn').title=u().changeLang;
+  buildNav();render();prog();
+}
+
+function buildNav(){
+  const nl=document.getElementById('navList'),d=D(lang);nl.innerHTML='';
+  let si=0;
+  d.modules.forEach(m=>{
+    nl.innerHTML+=`<li><div class="nv-mod">${m.icon} ${m.title}</div></li>`;
+    m.steps.forEach(s=>{
+      const idx=si++,dn=s.checkpoint&&S[s.checkpoint.id],ac=idx===ci;
+      nl.innerHTML+=`<li><div class="nv-item${ac?' act':''}${dn?' done':''}" data-i="${idx}"><span class="nv-ic">${dn?'✅':ac?'▶':'○'}</span><span>${s.title}</span></div></li>`;
+    });
+  });
+  nl.querySelectorAll('.nv-item').forEach(el=>el.onclick=()=>go(+el.dataset.i));
+}
+
+function go(i){if(i<0||i>=steps.length)return;ci=i;S.ci=i;save();render();buildNav();prog();window.scrollTo({top:0,behavior:'smooth'})}
+
+function render(){
+  const s=steps[ci],mc=document.getElementById('mc'),ui=u();
+  mc.style.animation='none';void mc.offsetHeight;mc.style.animation='fi .3s ease';
+  let h=`<div class="s-hd"><span class="s-badge">${s.badge}</span><h1 class="s-title">${s.title}</h1><p class="s-sub">${s.subtitle}</p>${s.time?`<span class="s-time">⏱ ${s.time} ${ui.est}</span>`:''}</div>${s.html}`;
+  if(s.checkpoint){const dn=S[s.checkpoint.id];h+=`<div class="ckpt"><span class="ckpt-ic">${dn?'✅':'☐'}</span><div><div class="ckpt-tx">${s.checkpoint.text}</div><button class="ckpt-btn${dn?' dn':''}" data-ck="${s.checkpoint.id}"${dn?'':` onclick="ckpt(this)"`}>${dn?ui.done:ui.mark}</button></div></div>`}
+  mc.innerHTML=h;initR();
+  document.getElementById('prevBtn').disabled=ci===0;
+  document.getElementById('prevBtn').textContent=ui.prev;
+  const nb=document.getElementById('nextBtn');
+  nb.textContent=ci===steps.length-1?ui.summary:ui.next;nb.disabled=false;
+}
+
+function ckpt(btn){const id=btn.dataset.ck;S[id]=true;save();btn.classList.add('dn');btn.textContent=u().done;btn.onclick=null;btn.closest('.ckpt').querySelector('.ckpt-ic').textContent='✅';buildNav();prog()}
+
+function prog(){
+  const cks=steps.filter(s=>s.checkpoint),dn=cks.filter(s=>S[s.checkpoint.id]).length;
+  const pct=cks.length?Math.round(dn/cks.length*100):0;
+  document.getElementById('pbFill').style.width=pct+'%';
+  document.getElementById('pbTxt').textContent=`${pct}% ${u().progressComplete} (${dn}/${cks.length})`;
+}
+
+function initR(){
+  document.querySelectorAll('.r-grp').forEach(g=>{
+    const q=g.dataset.q;if(!q)return;
+    const isN=q==='nps',mx=isN?10:5,mn=isN?0:1;
+    g.innerHTML='';
+    for(let i=mn;i<=mx;i++){
+      const b=document.createElement('button');b.className='r-btn';b.textContent=i;b.type='button';
+      if(S['r_'+q]===i)b.classList.add('sel');
+      b.onclick=()=>{g.querySelectorAll('.r-btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');S['r_'+q]=i;save()};
+      g.appendChild(b);
+    }
+  });
+  const cm=document.getElementById('cmTxt');
+  if(cm){cm.value=S.cm||'';cm.oninput=()=>{S.cm=cm.value;save()}}
+}
+
+function CC(btn){
+  const bl=btn.closest('.code'),tx=bl.textContent.replace(btn.textContent,'').trim();
+  navigator.clipboard.writeText(tx).then(()=>{btn.textContent=u().copied;btn.classList.add('ok');setTimeout(()=>{btn.textContent=u().copy;btn.classList.remove('ok')},2000)});
+}
+
+function showComp(){
+  const cks=steps.filter(s=>s.checkpoint),dn=cks.filter(s=>S[s.checkpoint.id]).length,ui=u();
+  const pre=[],post=[];
+  for(let i=1;i<=5;i++){if(S['r_pre-q'+i])pre.push(S['r_pre-q'+i]);if(S['r_post-q'+i])post.push(S['r_post-q'+i])}
+  const pa=pre.length?(pre.reduce((a,b)=>a+b,0)/pre.length).toFixed(1):'—';
+  const poa=post.length?(post.reduce((a,b)=>a+b,0)/post.length).toFixed(1):'—';
+  const nps=S.r_nps!=null?S.r_nps:'—';
+  document.getElementById('mc').innerHTML=`<div class="comp"><div class="comp-ic">🎉</div><h1 class="comp-t">${ui.compT}</h1><p class="comp-st">${ui.compS}</p><div class="comp-stats"><div><div class="stat-v">${dn}/${cks.length}</div><div class="stat-l">${ui.ckpts}</div></div><div><div class="stat-v">${pa}</div><div class="stat-l">${ui.pre}</div></div><div><div class="stat-v">${poa}</div><div class="stat-l">${ui.post}</div></div><div><div class="stat-v">${nps}</div><div class="stat-l">NPS</div></div></div>${S.cm?`<div class="card c-s" style="text-align:left;max-width:460px;margin:0 auto"><span class="c-lb">💪</span><p>${S.cm}</p></div>`:''}</div>`;
+  document.getElementById('nextBtn').disabled=true;
+}
+
+// Nav buttons
+document.getElementById('prevBtn').onclick=()=>go(ci-1);
+document.getElementById('nextBtn').onclick=()=>{ci===steps.length-1?showComp():go(ci+1)};
+document.getElementById('resetBtn').onclick=()=>{if(confirm(u().resetC)){localStorage.removeItem(SK);S={};ci=0;buildNav();render();prog()}};
+document.getElementById('langBtn').onclick=()=>{localStorage.removeItem(LK);lang='';document.getElementById('app').classList.add('hidden');document.getElementById('langPicker').classList.remove('hidden');initLangPicker()};
+
+// Keyboard nav
+document.onkeydown=e=>{if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT')return;if(e.key==='ArrowRight'){e.preventDefault();if(ci<steps.length-1)go(ci+1)}if(e.key==='ArrowLeft'){e.preventDefault();if(ci>0)go(ci-1)}};
+
+// Start
+initLangPicker();
+</script>
+</body>
+</html>
